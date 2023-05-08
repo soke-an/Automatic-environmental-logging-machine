@@ -7,3 +7,4 @@ import adafruit_sht31d
 import mysql.connector
 
 mydb=mysql.connector.connect
+ host="Localhost"
