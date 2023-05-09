@@ -1,0 +1,44 @@
+import time
+import board
+import busio
+import adafruit_ads1x15.ads1115 as ADS
+from adafruit_ads1x15.analog_in import AnalogIn
+import adafruit_sht31d
+import mysql.connector
+
+# MySQLデータベースに接続
+mydb = mysql.connector.connect(
+  host="localhost",        
+  user="yourusername",      
+  password="yourpassword",  
+  database="yourdatabase"   
+)
+
+# SHT31Dセンサーの設定
+i2c = busio.I2C(board.SCL, board.SDA)
+sht31d = adafruit_sht31d.SHT31D(i2c)
+
+# ADS1115の設定
+ads = ADS.ADS1115(i2c)
+chan = AnalogIn(ads, ADS.P0)
+
+# 10分ごとに実行
+while True:
+    try:
+        soil_moisture = chan.value / 32767.0 * 100.0   # 土壌湿度の%化
+        
+        temperature = sht31d.temperature
+        humidity = sht31d.relative_humidity  # 湿度を読み取る
+        
+        mycursor = mydb.cursor()  
+        sql = "INSERT INTO sensor_data (soil_moisture, temperature, humidity) VALUES (%s, %s, %s)" 
+        val = (soil_moisture, temperature, humidity)   
+        mycursor.execute(sql, val)    
+        mydb.commit()                    
+
+        print("Data recorded successfully")
+
+    except Exception as e:
+        print(e)                        
+        
+    time.sleep(600)                       
